@@ -8,7 +8,6 @@ using UnityEngine;
 /// </summary>
 public class Dijkstra : MonoBehaviour
 {
-    //test
     // Colors for the different search categories.
     public static Color openColor = Color.cyan;
     public static Color closedColor = Color.blue;
