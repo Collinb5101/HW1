@@ -5,6 +5,7 @@ using UnityEngine;
 using UnityEditor.MemoryProfiler;
 using Unity.PlasticSCM.Editor.WebApi;
 using Unity.VisualScripting;
+using UnityEngine.Tilemaps;
 
 /// <summary>
 /// Performs search using Dijkstra's algorithm.
@@ -28,7 +29,7 @@ public class Dijkstra : MonoBehaviour
 
         // Add your Dijkstra code here.
         Node startNode = start.GetComponent<Node>();
-        Node endNode = end.GetComponent<Node>();
+        GameObject endNode = new GameObject();
 
         //creates a new node record for start node and end node and current node
         NodeRecord startRecord = new NodeRecord();
@@ -79,7 +80,7 @@ public class Dijkstra : MonoBehaviour
             yield return new WaitForSeconds(waitTime);
 
             //if the current node is the goal node
-            if(currentNode.Node = endNode)
+            if(currentNode.Tile == end)
             {
                 //break the while early
                 break;
@@ -89,40 +90,37 @@ public class Dijkstra : MonoBehaviour
             foreach(GameObject connection in currentNode.Node.Connections.Values)
             {
                 //get the cost estimate for the end node
-                endNode = connection.GetComponent<NodeRecord>().Node;
-                float endNodeCost = currentNode.CostSoFar + connection.GetComponent<NodeRecord>().CostSoFar;
+                //endNode = connection.GetComponent<NodeRecord>().Node;
+                endNode = connection;
+                float endNodeCost = currentNode.CostSoFar + 1;
 
                 //if the end node is in the closed list
-                if(closed.Contains(endNode.GetComponent<NodeRecord>())) 
+                foreach(NodeRecord nodeRecord in closed)
                 {
-                    //skip
-                    continue;
-                }
-                //if the end node is in the open list
-                else if(open.Contains(endNode.GetComponent<NodeRecord>()))
-                {
-                    //loop through the open list
-                    foreach(NodeRecord node in open)
-                    {
-                        //when found set the end node and exit the loop
-                        if(node.Node == endNode)
-                        {
-                            endNodeRecord = node;
-                            break;
-                        }
-                    }
-                    //if the cost of the end node record cost is less than the end node cost keep going
-                    if (endNodeRecord.CostSoFar <= endNodeCost)
+                    if(nodeRecord.Tile == endNode)
                     {
                         continue;
                     }
-
                 }
-                else
+                //if the end node is in the open list
+                foreach(NodeRecord nodeRecord in open)
                 {
-                    //endNodeRecord = new NodeRecord();
-                    endNodeRecord.Node = endNode;
+                    if(nodeRecord.CostSoFar <= endNodeCost)
+                    {
+                        continue;
+                    }
+                    else
+                    {
+                        nodeRecord.CostSoFar = endNodeCost;
+                        nodeRecord.Connection = currentNode.Tile;
+                        continue;
+                    }
                 }
+                endNodeRecord = new NodeRecord();
+                endNodeRecord.Tile = endNode;
+                endNodeRecord.Node = endNode.GetComponent<Node>();
+                //endNodeRecord.Node = endNode;    
+
 
                 //update the cost and the connection
                 endNodeRecord.CostSoFar = endNodeCost;
@@ -135,10 +133,10 @@ public class Dijkstra : MonoBehaviour
                 }
 
                 //if the end node is not in the open list
-                if(!open.Contains(endNode.GetComponent<NodeRecord>()))
+                if(!open.Contains(endNodeRecord) && !closed.Contains(endNodeRecord))
                 {
                     //add it
-                    open.Add(endNode.GetComponent<NodeRecord>());
+                    open.Add(endNodeRecord);
                 }
 
                 //color the open tiles
@@ -169,15 +167,15 @@ public class Dijkstra : MonoBehaviour
 
         // Reset the stopwatch.
         watch.Reset();
-
+        path = new Stack<NodeRecord>();
         // Determine whether Dijkstra found a path and print it here.
-        if (currentNode.Node != endNode)
+        if (currentNode.Tile != end)
         {
             UnityEngine.Debug.Log("you fucked up");
         }
         else
         {
-            while(currentNode.Node != startNode)
+            while(currentNode.Tile != start)
             {
                 path.Push(currentNode);
                 currentNode = currentNode.Connection.GetComponent<NodeRecord>();
