@@ -132,8 +132,25 @@ public class Dijkstra : MonoBehaviour
                     endNodeRecord.Display(endNodeCost);
                 }
 
+                bool canBeAdded = true;
                 //if the end node is not in the open list
-                if(!open.Contains(endNodeRecord) && !closed.Contains(endNodeRecord))
+                foreach(NodeRecord nodeRecord in open)
+                {
+                    if(nodeRecord.Tile == endNodeRecord.Tile)
+                    {
+                        canBeAdded = false;
+                    }
+                    
+                }
+                foreach (NodeRecord nodeRecordTwo in closed)
+                {
+                    if (nodeRecordTwo.Tile == endNodeRecord.Tile)
+                    {
+                        canBeAdded = false;
+                    }
+
+                }
+                if (canBeAdded)
                 {
                     //add it
                     open.Add(endNodeRecord);
