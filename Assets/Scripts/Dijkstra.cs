@@ -6,6 +6,7 @@ using UnityEditor.MemoryProfiler;
 using Unity.PlasticSCM.Editor.WebApi;
 using Unity.VisualScripting;
 using UnityEngine.Tilemaps;
+using System.Linq;
 
 /// <summary>
 /// Performs search using Dijkstra's algorithm.
@@ -94,49 +95,43 @@ public class Dijkstra : MonoBehaviour
                 endNode = connection;
                 float endNodeCost = currentNode.CostSoFar + 1;
 
+                
+
+
                 //if the end node is in the closed list
-                foreach(NodeRecord nodeRecord in closed)
+                if(closed.Contains(endNodeRecord))
                 {
-                    if(nodeRecord.Tile == endNode)
-                    {
-                        continue;
-                    }
+                    continue;
                 }
                 //if the end node is in the open list
                 foreach(NodeRecord nodeRecord in open)
                 {
-                    if(nodeRecord.CostSoFar <= endNodeCost)
+                    if (nodeRecord == endNodeRecord)
                     {
-                        continue;
+                        if (nodeRecord.CostSoFar > endNodeCost)
+                        {
+                            nodeRecord.CostSoFar = endNodeCost;
+                            nodeRecord.Connection = currentNode.Tile;
+                        }
                     }
-                    else
-                    {
-                        nodeRecord.CostSoFar = endNodeCost;
-                        nodeRecord.Connection = currentNode.Tile;
-                        continue;
-                    }
+                    
                 }
+  
                 endNodeRecord = new NodeRecord();
                 endNodeRecord.Tile = endNode;
                 endNodeRecord.Node = endNode.GetComponent<Node>();
-                //endNodeRecord.Node = endNode;    
-
 
                 //update the cost and the connection
                 endNodeRecord.CostSoFar = endNodeCost;
-                endNodeRecord.Connection = connection;
+                endNodeRecord.Connection = currentNode.Tile;
 
-                //display the costs
-                if(displayCosts)
-                {
-                    endNodeRecord.Display(endNodeCost);
-                }
+                
 
                 bool canBeAdded = true;
                 //if the end node is not in the open list
                 foreach(NodeRecord nodeRecord in open)
                 {
-                    if(nodeRecord.Tile == endNodeRecord.Tile)
+                    if(nodeRecord.Tile == connection)
                     {
                         canBeAdded = false;
                     }
@@ -144,7 +139,7 @@ public class Dijkstra : MonoBehaviour
                 }
                 foreach (NodeRecord nodeRecordTwo in closed)
                 {
-                    if (nodeRecordTwo.Tile == endNodeRecord.Tile)
+                    if (nodeRecordTwo.Tile == connection)
                     {
                         canBeAdded = false;
                     }
@@ -154,13 +149,20 @@ public class Dijkstra : MonoBehaviour
                 {
                     //add it
                     open.Add(endNodeRecord);
+
+                    //color the open tiles
+                    if (colorTiles)
+                    {
+                        endNodeRecord.ColorTile(openColor);
+                    }
+                    //display the costs
+                    if (displayCosts)
+                    {
+                        endNodeRecord.Display(endNodeCost);
+                    }
                 }
 
-                //color the open tiles
-                if(colorTiles)
-                {
-                    endNodeRecord.ColorTile(openColor);
-                }
+                
                 yield return new WaitForSeconds(waitTime);
             }
 
@@ -192,14 +194,26 @@ public class Dijkstra : MonoBehaviour
         }
         else
         {
-            while(currentNode.Tile != start)
+            while(currentNode.Node != start.GetComponent<Node>())
             {
                 path.Push(currentNode);
-                currentNode = currentNode.Connection.GetComponent<NodeRecord>();
+                for(int i = 0; i < currentNode.Node.Connections.Count; i++)
+                {
+                    UnityEngine.Debug.Log(currentNode.Connection.ToString());
+                    UnityEngine.Debug.Log(currentNode.Node.ToString());
+
+                    if (currentNode.Node.Connections.ElementAt(i).Value == currentNode.Connection)
+                    {
+                        currentNode.Tile = currentNode.Connection;
+                        currentNode.Node = currentNode.Tile.GetComponent<Node>();
+                        currentNode.Connection = currentNode.Node.Connections.ElementAt(i).Value;
+                    }
+                }
+                
 
                 if (colorTiles)
                 {
-                    endNodeRecord.ColorTile(pathColor);
+                    currentNode.ColorTile(pathColor);
                 }
                 yield return new WaitForSeconds(waitTime);
             }
