@@ -95,9 +95,9 @@ public class Dijkstra : MonoBehaviour
                 endNode = connection;
                 float endNodeCost = currentNode.CostSoFar + 1;
 
-                
 
 
+                bool exitEarly = false;
                 //if the end node is in the closed list
                 if(closed.Contains(endNodeRecord))
                 {
@@ -106,17 +106,25 @@ public class Dijkstra : MonoBehaviour
                 //if the end node is in the open list
                 foreach(NodeRecord nodeRecord in open)
                 {
-                    if (nodeRecord == endNodeRecord)
+                    if (nodeRecord.Tile == endNodeRecord.Tile)
                     {
-                        if (nodeRecord.CostSoFar > endNodeCost)
+                        if (nodeRecord.CostSoFar >= lowestCost)
                         {
                             nodeRecord.CostSoFar = endNodeCost;
                             nodeRecord.Connection = currentNode.Tile;
                         }
+                        else
+                        {
+                            exitEarly = true;
+                            continue;
+                        }
                     }
                     
                 }
-  
+                if (exitEarly)
+                {
+                    continue;
+                }
                 endNodeRecord = new NodeRecord();
                 endNodeRecord.Tile = endNode;
                 endNodeRecord.Node = endNode.GetComponent<Node>();
@@ -150,19 +158,19 @@ public class Dijkstra : MonoBehaviour
                     //add it
                     open.Add(endNodeRecord);
 
-                    //color the open tiles
-                    if (colorTiles)
-                    {
-                        endNodeRecord.ColorTile(openColor);
-                    }
-                    //display the costs
-                    if (displayCosts)
-                    {
-                        endNodeRecord.Display(endNodeCost);
-                    }
+                    
+                }
+                //color the open tiles
+                if (colorTiles)
+                {
+                    endNodeRecord.ColorTile(openColor);
+                }
+                //display the costs
+                if (displayCosts)
+                {
+                    endNodeRecord.Display(endNodeCost);
                 }
 
-                
                 yield return new WaitForSeconds(waitTime);
             }
 
@@ -186,7 +194,13 @@ public class Dijkstra : MonoBehaviour
 
         // Reset the stopwatch.
         watch.Reset();
-        path = new Stack<NodeRecord>();
+
+
+        if(path==null)
+        {
+            path = new Stack<NodeRecord>();
+        }
+
         // Determine whether Dijkstra found a path and print it here.
         if (currentNode.Tile != end)
         {
@@ -199,8 +213,6 @@ public class Dijkstra : MonoBehaviour
                 path.Push(currentNode);
                 for(int i = 0; i < currentNode.Node.Connections.Count; i++)
                 {
-                    UnityEngine.Debug.Log(currentNode.Connection.ToString());
-                    UnityEngine.Debug.Log(currentNode.Node.ToString());
 
                     if (currentNode.Node.Connections.ElementAt(i).Value == currentNode.Connection)
                     {
