@@ -30,17 +30,15 @@ public class Dijkstra : MonoBehaviour
 
         // Add your Dijkstra code here.
         Node startNode = start.GetComponent<Node>();
-        GameObject endNode = new GameObject();
 
         //creates a new node record for start node and end node and current node
         NodeRecord startRecord = new NodeRecord();
-        NodeRecord endNodeRecord = new NodeRecord();
         NodeRecord currentNode = new NodeRecord();
 
         //initializes start node
         startRecord.Tile = start;
         startRecord.Node = startNode;
-        startRecord.Connection = null;
+        startRecord.connection = null;
         startRecord.CostSoFar = 0;
 
         //startRecord.Node.printConnections();
@@ -87,91 +85,82 @@ public class Dijkstra : MonoBehaviour
                 break;
             }
 
+
             //for every connection in the connection list
-            foreach(GameObject connection in currentNode.Node.Connections.Values)
+            foreach (KeyValuePair<Direction, GameObject> connection in currentNode.Node.Connections)
             {
                 //get the cost estimate for the end node
                 //endNode = connection.GetComponent<NodeRecord>().Node;
-                endNode = connection;
+                Node endNode = connection.Value.GetComponent<Node>();
                 float endNodeCost = currentNode.CostSoFar + 1;
 
-
-
                 bool exitEarly = false;
+                NodeRecord endNodeRecord = new NodeRecord();
+
+                foreach(NodeRecord nodeRecord in closed)
+                {
+                    if(nodeRecord.Node == endNode)
+                    {
+                        exitEarly = true;
+                        break;
+                    }
+                }
+
                 //if the end node is in the closed list
-                if(closed.Contains(endNodeRecord))
+                if(exitEarly)
                 {
                     continue;
                 }
-                //if the end node is in the open list
-                foreach(NodeRecord nodeRecord in open)
+                else
                 {
-                    if (nodeRecord.Tile == endNodeRecord.Tile)
+                    //if the end node is in the open list
+                    foreach (NodeRecord nodeRecord in open)
                     {
-                        if (nodeRecord.CostSoFar >= lowestCost)
-                        {
-                            nodeRecord.CostSoFar = endNodeCost;
-                            nodeRecord.Connection = currentNode.Tile;
-                        }
-                        else
+                        if(nodeRecord.Node == endNode)
                         {
                             exitEarly = true;
+                            endNodeRecord = nodeRecord;
+                            break;
+                        }
+
+                    }
+
+                    if(exitEarly)
+                    {
+                        if(endNodeRecord.CostSoFar <= endNodeCost)
+                        {
                             continue;
                         }
                     }
-                    
-                }
-                if (exitEarly)
-                {
-                    continue;
-                }
-                endNodeRecord = new NodeRecord();
-                endNodeRecord.Tile = endNode;
-                endNodeRecord.Node = endNode.GetComponent<Node>();
-
-                //update the cost and the connection
-                endNodeRecord.CostSoFar = endNodeCost;
-                endNodeRecord.Connection = currentNode.Tile;
-
-                
-
-                bool canBeAdded = true;
-                //if the end node is not in the open list
-                foreach(NodeRecord nodeRecord in open)
-                {
-                    if(nodeRecord.Tile == connection)
+                    else
                     {
-                        canBeAdded = false;
-                    }
-                    
-                }
-                foreach (NodeRecord nodeRecordTwo in closed)
-                {
-                    if (nodeRecordTwo.Tile == connection)
-                    {
-                        canBeAdded = false;
+                        endNodeRecord = new NodeRecord();
+                        endNodeRecord.Node = endNode;
                     }
 
-                }
-                if (canBeAdded)
-                {
-                    //add it
-                    open.Add(endNodeRecord);
+                    endNodeRecord.CostSoFar = endNodeCost;
+                    endNodeRecord.connection = currentNode.Node.Connections;
+                    endNodeRecord.Tile = connection.Value;
 
-                    
-                }
-                //color the open tiles
-                if (colorTiles)
-                {
-                    endNodeRecord.ColorTile(openColor);
-                }
-                //display the costs
-                if (displayCosts)
-                {
-                    endNodeRecord.Display(endNodeCost);
-                }
+                    if(displayCosts)
+                    {
+                        endNodeRecord.Display(endNodeCost);
+                    }
 
-                yield return new WaitForSeconds(waitTime);
+                    // Open Records did not contain the end node 
+                    if (!exitEarly)
+                    {
+                        open.Add(endNodeRecord);
+                    }
+
+                    // Tile Color
+                    if (colorTiles && endNodeRecord.Node != startRecord.Node && endNodeRecord.Node != end.GetComponent<Node>())
+                    {
+                        endNodeRecord.ColorTile(openColor);
+                    }
+
+                    yield return new WaitForSeconds(waitTime);
+                }
             }
 
             //remove the current node from the open list and put it 
@@ -180,7 +169,7 @@ public class Dijkstra : MonoBehaviour
             closed.Add(currentNode);
 
             //color the closed tiles
-            if (colorTiles)
+            if (colorTiles && currentNode.Node != startRecord.Node && currentNode.Node != end.GetComponent<Node>())
             {
                 currentNode.ColorTile(closedColor);
             }
@@ -202,31 +191,30 @@ public class Dijkstra : MonoBehaviour
         }
 
         // Determine whether Dijkstra found a path and print it here.
-        if (currentNode.Tile != end)
+        if (currentNode == null || currentNode.Node != end.GetComponent<Node>())
         {
             UnityEngine.Debug.Log("you fucked up");
         }
         else
         {
-            while(currentNode.Node != start.GetComponent<Node>())
+            while(currentNode != startRecord)
             {
                 path.Push(currentNode);
-                for(int i = 0; i < currentNode.Node.Connections.Count; i++)
+                foreach(NodeRecord nodeRecord in closed)
                 {
-
-                    if (currentNode.Node.Connections.ElementAt(i).Value == currentNode.Connection)
+                    if(nodeRecord.Node.Connections == currentNode.connection)
                     {
-                        currentNode.Tile = currentNode.Connection;
-                        currentNode.Node = currentNode.Tile.GetComponent<Node>();
-                        currentNode.Connection = currentNode.Node.Connections.ElementAt(i).Value;
+                        currentNode = nodeRecord;
+                        break;
                     }
                 }
-                
 
-                if (colorTiles)
+
+                if (colorTiles && currentNode.Node != startRecord.Node && currentNode.Node != end.GetComponent<Node>())
                 {
                     currentNode.ColorTile(pathColor);
                 }
+
                 yield return new WaitForSeconds(waitTime);
             }
             UnityEngine.Debug.Log("Path Length: " + path.Count.ToString());
@@ -246,7 +234,7 @@ public class NodeRecord
 
     // Set the other class properties here.
     public Node Node { get; set; } = null;
-    public GameObject Connection { get; set; } = null;
+    public Dictionary<Direction, GameObject> connection;
     public float CostSoFar { get; set; } = 0;
 
     // Sets the tile's color.
