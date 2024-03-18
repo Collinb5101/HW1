@@ -30,7 +30,7 @@ public class AStar : MonoBehaviour
 
         startRecord.Tile = start;
         startRecord.Node = start.GetComponent<Node>();
-        startRecord.connection = null;
+        startRecord.Connection = null;
         startRecord.CostSoFar = 0;
         startRecord.EstimatedCostSoFar = heuristic(start, start, end);
 
@@ -141,7 +141,7 @@ public class AStar : MonoBehaviour
                 }
 
                 endNodeRecord.CostSoFar = endNodeCost;
-                endNodeRecord.connection = currentRecord.Node.Connections;
+                endNodeRecord.Connection = currentRecord.Node.Connections;
                 endNodeHeuristic = endNodeCost + endNodeHeuristic;
 
                 if(displayCosts)
@@ -208,7 +208,7 @@ public class AStar : MonoBehaviour
                 path.Push(currentRecord);
                 foreach (NodeRecord nodeRecord in closed)
                 {
-                    if (nodeRecord.Node.Connections == currentRecord.connection)
+                    if (nodeRecord.Node.Connections == currentRecord.Connection)
                     {
                         currentRecord = nodeRecord;
                         break;
@@ -216,7 +216,7 @@ public class AStar : MonoBehaviour
                 }
 
 
-                if (colorTiles && currentRecord.Node != startRecord.Node && currentRecord.Node != end.GetComponent<Node>())
+                if (colorTiles)
                 {
                     currentRecord.ColorTile(pathColor);
                 }

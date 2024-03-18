@@ -276,7 +276,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   waitTime: 0
-  searchType: 1
+  searchType: 0
   heuristicType: 2
   colorTiles: 1
   displayCosts: 1

@@ -38,10 +38,8 @@ public class Dijkstra : MonoBehaviour
         //initializes start node
         startRecord.Tile = start;
         startRecord.Node = startNode;
-        startRecord.connection = null;
+        startRecord.Connection = null;
         startRecord.CostSoFar = 0;
-
-        //startRecord.Node.printConnections();
 
         //creates an open list of node records and adds the start node to it
         List<NodeRecord> open = new List<NodeRecord>();
@@ -53,7 +51,6 @@ public class Dijkstra : MonoBehaviour
         while(open.Count > 0)
         {
             //initialize a variable for the current node and lowest cost
-            //currentNode = new NodeRecord();
             float lowestCost = float.MaxValue;
 
             //for every element inside the open list
@@ -90,15 +87,17 @@ public class Dijkstra : MonoBehaviour
             foreach (KeyValuePair<Direction, GameObject> connection in currentNode.Node.Connections)
             {
                 //get the cost estimate for the end node
-                //endNode = connection.GetComponent<NodeRecord>().Node;
                 Node endNode = connection.Value.GetComponent<Node>();
                 float endNodeCost = currentNode.CostSoFar + 1;
 
+                //create an exit early boolean and a new end node record
                 bool exitEarly = false;
                 NodeRecord endNodeRecord = new NodeRecord();
 
+                //for every record in the closed list
                 foreach(NodeRecord nodeRecord in closed)
                 {
+                    //if it contains the end node exit early and break from the foreach loop
                     if(nodeRecord.Node == endNode)
                     {
                         exitEarly = true;
@@ -116,6 +115,7 @@ public class Dijkstra : MonoBehaviour
                     //if the end node is in the open list
                     foreach (NodeRecord nodeRecord in open)
                     {
+                        //exit early and set the end node record to the record found in the open list
                         if(nodeRecord.Node == endNode)
                         {
                             exitEarly = true;
@@ -125,21 +125,26 @@ public class Dijkstra : MonoBehaviour
 
                     }
 
+                    //if exiting early
                     if(exitEarly)
                     {
+                        //and if the cost is better
                         if(endNodeRecord.CostSoFar <= endNodeCost)
                         {
+                            //leave
                             continue;
                         }
                     }
                     else
                     {
+                        //otherwise create a new end node record and set its node to the end node
                         endNodeRecord = new NodeRecord();
                         endNodeRecord.Node = endNode;
                     }
 
+                    //set the end node record to the newly found variables
                     endNodeRecord.CostSoFar = endNodeCost;
-                    endNodeRecord.connection = currentNode.Node.Connections;
+                    endNodeRecord.Connection = currentNode.Node.Connections;
                     endNodeRecord.Tile = connection.Value;
 
                     if(displayCosts)
@@ -147,14 +152,13 @@ public class Dijkstra : MonoBehaviour
                         endNodeRecord.Display(endNodeCost);
                     }
 
-                    // Open Records did not contain the end node 
+                    //if not exiting early then add the record to the open list 
                     if (!exitEarly)
                     {
                         open.Add(endNodeRecord);
                     }
 
-                    // Tile Color
-                    if (colorTiles && endNodeRecord.Node != startRecord.Node && endNodeRecord.Node != end.GetComponent<Node>())
+                    if (colorTiles)
                     {
                         endNodeRecord.ColorTile(openColor);
                     }
@@ -163,13 +167,12 @@ public class Dijkstra : MonoBehaviour
                 }
             }
 
-            //remove the current node from the open list and put it 
-            //into the closed list
+            //remove the node from the open list and put it in the closed list
             open.Remove(currentNode);
             closed.Add(currentNode);
 
-            //color the closed tiles
-            if (colorTiles && currentNode.Node != startRecord.Node && currentNode.Node != end.GetComponent<Node>())
+            
+            if (colorTiles)
             {
                 currentNode.ColorTile(closedColor);
             }
@@ -184,7 +187,7 @@ public class Dijkstra : MonoBehaviour
         // Reset the stopwatch.
         watch.Reset();
 
-
+        //if the path doesn't exist then make it
         if(path==null)
         {
             path = new Stack<NodeRecord>();
@@ -197,20 +200,26 @@ public class Dijkstra : MonoBehaviour
         }
         else
         {
+            //while the current node is not the start node
             while(currentNode != startRecord)
             {
+                //push the current node to the path
                 path.Push(currentNode);
+
+                //for every record in the closed record
                 foreach(NodeRecord nodeRecord in closed)
                 {
-                    if(nodeRecord.Node.Connections == currentNode.connection)
+                    //if this node is connected to the current node in the path
+                    if(nodeRecord.Node.Connections == currentNode.Connection)
                     {
+                        //set this node to be the new current node and break
                         currentNode = nodeRecord;
                         break;
                     }
                 }
 
 
-                if (colorTiles && currentNode.Node != startRecord.Node && currentNode.Node != end.GetComponent<Node>())
+                if (colorTiles)
                 {
                     currentNode.ColorTile(pathColor);
                 }
@@ -234,7 +243,7 @@ public class NodeRecord
 
     // Set the other class properties here.
     public Node Node { get; set; } = null;
-    public Dictionary<Direction, GameObject> connection;
+    public Dictionary<Direction, GameObject> Connection { get; set; } = null;
     public float CostSoFar { get; set; } = 0;
     public float EstimatedCostSoFar { get; set; } = 0;
 
