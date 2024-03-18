@@ -26,11 +26,13 @@ public class AStar : MonoBehaviour
         NodeRecord startRecord = new NodeRecord();
         NodeRecord currentRecord = new NodeRecord();
 
+        float endNodeHeuristic = 0;
+
         startRecord.Tile = start;
-        startRecord.Node = startNode;
+        startRecord.Node = start.GetComponent<Node>();
         startRecord.connection = null;
         startRecord.CostSoFar = 0;
-        startRecord.EstimatedCostSoFar = heuristic(start);
+        startRecord.EstimatedCostSoFar = heuristic(start, start, end);
 
         float scale = startRecord.Tile.transform.localScale.x;
 
@@ -83,7 +85,7 @@ public class AStar : MonoBehaviour
                 //get the cost estimate for the end node
                 //endNode = connection.GetComponent<NodeRecord>().Node;
                 Node endNode = connection.Value.GetComponent<Node>();
-                float endNodeCost = currentRecord.CostSoFar + 1;
+                float endNodeCost = currentRecord.CostSoFar + scale;
 
                 bool exitEarly = false;
                 NodeRecord endNodeRecord = new NodeRecord();
@@ -92,75 +94,89 @@ public class AStar : MonoBehaviour
                 {
                     if (nodeRecord.Node == endNode)
                     {
-                        exitEarly = true;
-                        break;
+                        endNodeRecord = nodeRecord;
+
+                        if(endNodeRecord.CostSoFar <= endNodeCost)
+                        {
+                            exitEarly = true;
+                            break;
+                        }
+                        else
+                        {
+                            closed.Remove(endNodeRecord);
+                            endNodeHeuristic = endNodeRecord.EstimatedCostSoFar - endNodeRecord.CostSoFar;
+                            break;
+                        }
+                    }
+                }
+                foreach (NodeRecord nodeRecord in open)
+                {
+                    if (nodeRecord.Node == endNode)
+                    {
+                        endNodeRecord = nodeRecord;
+
+                        if (endNodeRecord.CostSoFar <= endNodeCost)
+                        {
+                            exitEarly = true;
+                            break;
+                        }
+                        else
+                        {
+                            open.Remove(endNodeRecord);
+                            endNodeHeuristic = endNodeRecord.EstimatedCostSoFar - endNodeRecord.CostSoFar;
+                            break;
+                        }
                     }
                 }
 
-                //if the end node is in the closed list
-                if (exitEarly)
+                if(exitEarly)
                 {
                     continue;
                 }
                 else
                 {
-                    //if the end node is in the open list
-                    foreach (NodeRecord nodeRecord in open)
-                    {
-                        if (nodeRecord.Node == endNode)
-                        {
-                            exitEarly = true;
-                            endNodeRecord = nodeRecord;
-                            break;
-                        }
-
-                    }
-
-                    if (exitEarly)
-                    {
-                        if (endNodeRecord.CostSoFar <= endNodeCost)
-                        {
-                            continue;
-                        }
-                    }
-                    else
-                    {
-                        endNodeRecord = new NodeRecord();
-                        endNodeRecord.Node = endNode;
-                    }
-
-                    endNodeRecord.CostSoFar = endNodeCost;
-                    endNodeRecord.connection = currentRecord.Node.Connections;
-                    endNodeRecord.Tile = connection.Value;
-
-                    if (displayCosts)
-                    {
-                        endNodeRecord.Display(endNodeCost);
-                    }
-
-                    // Open Records did not contain the end node 
-                    if (!exitEarly)
-                    {
-                        open.Add(endNodeRecord);
-                    }
-
-                    // Tile Color
-                    if (colorTiles && endNodeRecord.Node != startRecord.Node && endNodeRecord.Node != end.GetComponent<Node>())
-                    {
-                        endNodeRecord.ColorTile(openColor);
-                    }
-
-                    yield return new WaitForSeconds(waitTime);
+                    endNodeRecord = new NodeRecord();
+                    endNodeRecord.Node = endNode;
+                    endNodeHeuristic = heuristic(start, currentRecord.Tile, end);
                 }
+
+                endNodeRecord.CostSoFar = endNodeCost;
+                endNodeRecord.connection = currentRecord.Node.Connections;
+                endNodeHeuristic = endNodeCost + endNodeHeuristic;
+
+                if(displayCosts)
+                {
+                    endNodeRecord.Display(endNodeCost);
+                }
+
+                bool containsEndNode = false;
+                foreach (NodeRecord nodeRecord in open)
+                {
+                    if (nodeRecord.Node == endNode)
+                    {
+                        containsEndNode= true;
+                    }
+                }
+                if(!containsEndNode)
+                {
+                    open.Add(endNodeRecord);
+                }
+
+                if(colorTiles)
+                {
+                    endNodeRecord.ColorTile(openColor);
+                }
+                yield return new WaitForSeconds(waitTime);
+
             }
 
             //remove the current node from the open list and put it 
             //into the closed list
-            open.Remove(currentNode);
-            closed.Add(currentNode);
+            open.Remove(currentRecord);
+            closed.Add(currentRecord);
 
             //color the closed tiles
-            if (colorTiles && currentRecord.Node != startRecord.Node && currentRecord.Node != end.GetComponent<Node>())
+            if (colorTiles)
             {
                 currentRecord.ColorTile(closedColor);
             }
@@ -169,12 +185,46 @@ public class AStar : MonoBehaviour
         watch.Stop();
 
         UnityEngine.Debug.Log("Seconds Elapsed: " + (watch.ElapsedMilliseconds / 1000f).ToString());
-        UnityEngine.Debug.Log("Nodes Expanded: " + "print the number of nodes expanded here.");
+        UnityEngine.Debug.Log("Nodes Expanded: " + closed.Count.ToString());
 
         // Reset the stopwatch.
         watch.Reset();
 
         // Determine whether A* found a path and print it here.
+        if (path == null)
+        {
+            path = new Stack<NodeRecord>();
+        }
+
+        // Determine whether Dijkstra found a path and print it here.
+        if (currentRecord == null || currentRecord.Node != end.GetComponent<Node>())
+        {
+            UnityEngine.Debug.Log("you fucked up");
+        }
+        else
+        {
+            while (currentRecord != startRecord)
+            {
+                path.Push(currentRecord);
+                foreach (NodeRecord nodeRecord in closed)
+                {
+                    if (nodeRecord.Node.Connections == currentRecord.connection)
+                    {
+                        currentRecord = nodeRecord;
+                        break;
+                    }
+                }
+
+
+                if (colorTiles && currentRecord.Node != startRecord.Node && currentRecord.Node != end.GetComponent<Node>())
+                {
+                    currentRecord.ColorTile(pathColor);
+                }
+
+                yield return new WaitForSeconds(waitTime);
+            }
+            UnityEngine.Debug.Log("Path Length: " + path.Count.ToString());
+        }
 
         yield return null;
     }
@@ -194,34 +244,5 @@ public class AStar : MonoBehaviour
     public static float CrossProduct (GameObject start, GameObject tile, GameObject goal)
     {
         return 0f;
-    }
-}
-
-/// <summary>
-/// A class for recording search statistics.
-/// </summary>
-public class NodeRecord
-{
-    // The tile game object.
-    public GameObject Tile { get; set; } = null;
-
-    // Set the other class properties here.
-    public Node Node { get; set; } = null;
-    public Dictionary<Direction, GameObject> Connection;
-    public float CostSoFar { get; set; } = 0;
-    public float EstimatedCostSoFar { get; set; } = 0;
-
-    // Sets the tile's color.
-    public void ColorTile(Color newColor)
-    {
-        SpriteRenderer renderer = Tile.GetComponentInChildren<SpriteRenderer>();
-        renderer.material.color = newColor;
-    }
-
-    // Displays a string on the tile.
-    public void Display(float value)
-    {
-        TextMesh text = Tile.GetComponent<TextMesh>();
-        text.text = value.ToString();
     }
 }

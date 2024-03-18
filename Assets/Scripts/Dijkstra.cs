@@ -236,6 +236,7 @@ public class NodeRecord
     public Node Node { get; set; } = null;
     public Dictionary<Direction, GameObject> connection;
     public float CostSoFar { get; set; } = 0;
+    public float EstimatedCostSoFar { get; set; } = 0;
 
     // Sets the tile's color.
     public void ColorTile (Color newColor)
