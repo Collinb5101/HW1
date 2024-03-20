@@ -32,7 +32,7 @@ public class AStar : MonoBehaviour
         startRecord.Node = start.GetComponent<Node>();
         startRecord.Connection = null;
         startRecord.CostSoFar = 0;
-        startRecord.EstimatedCostSoFar = heuristic(start, start, end);
+        startRecord.EstimatedCostSoFar = heuristic(start, startRecord.Tile, end);
 
         float scale = startRecord.Tile.transform.localScale.x;
 
@@ -53,10 +53,10 @@ public class AStar : MonoBehaviour
             for (int i = 0; i < open.Count; i++)
             {
                 //if the current cost of this node is the lowest cost
-                if (open[i].CostSoFar < lowestCost)
+                if (open[i].EstimatedCostSoFar < lowestCost)
                 {
                     //this cost becomes the lowest cost and this node becomes the current node
-                    lowestCost = open[i].CostSoFar;
+                    lowestCost = open[i].EstimatedCostSoFar;
                     currentRecord = open[i];
                 }
             }
@@ -96,6 +96,7 @@ public class AStar : MonoBehaviour
                     {
                         endNodeRecord = nodeRecord;
 
+                        //seems to never be greater than endnodecost
                         if(endNodeRecord.CostSoFar <= endNodeCost)
                         {
                             exitEarly = true;
@@ -104,13 +105,16 @@ public class AStar : MonoBehaviour
                         else
                         {
                             closed.Remove(endNodeRecord);
-                            endNodeHeuristic = endNodeRecord.EstimatedCostSoFar - endNodeRecord.CostSoFar;
+                            //endNodeHeuristic = endNodeRecord.EstimatedCostSoFar - endNodeRecord.CostSoFar;
+
+                            //endNodeRecord.EstimatedCostSoFar = endNodeHeuristic;
                             break;
                         }
                     }
                 }
                 foreach (NodeRecord nodeRecord in open)
                 {
+                    
                     if (nodeRecord.Node == endNode)
                     {
                         endNodeRecord = nodeRecord;
@@ -123,7 +127,9 @@ public class AStar : MonoBehaviour
                         else
                         {
                             open.Remove(endNodeRecord);
-                            endNodeHeuristic = endNodeRecord.EstimatedCostSoFar - endNodeRecord.CostSoFar;
+                            //endNodeHeuristic = endNodeRecord.EstimatedCostSoFar - endNodeRecord.CostSoFar;
+
+                            //endNodeRecord.EstimatedCostSoFar = endNodeHeuristic;
                             break;
                         }
                     }
@@ -137,12 +143,16 @@ public class AStar : MonoBehaviour
                 {
                     endNodeRecord = new NodeRecord();
                     endNodeRecord.Node = endNode;
-                    endNodeHeuristic = heuristic(start, currentRecord.Tile, end);
+                    endNodeRecord.Tile = endNode.gameObject;
+                    //endNodeHeuristic = heuristic(start, currentRecord.Tile, end);
+                    endNodeRecord.EstimatedCostSoFar = heuristic(start, endNodeRecord.Tile, end);
                 }
 
                 endNodeRecord.CostSoFar = endNodeCost;
                 endNodeRecord.Connection = currentRecord.Node.Connections;
-                endNodeHeuristic = endNodeCost + endNodeHeuristic;
+                //endNodeHeuristic = endNodeCost + endNodeHeuristic;
+
+                //endNodeRecord.EstimatedCostSoFar = endNodeHeuristic;
 
                 if(displayCosts)
                 {
@@ -238,11 +248,25 @@ public class AStar : MonoBehaviour
 
     public static float Manhattan (GameObject start, GameObject tile, GameObject goal)
     {
-        return 0f;
+        float distX, distY;
+        distX = Mathf.Abs(tile.transform.position.x - goal.transform.position.x);
+        distY = Mathf.Abs(tile.transform.position.y - goal.transform.position.y);
+
+        return distX + distY;
     }
 
     public static float CrossProduct (GameObject start, GameObject tile, GameObject goal)
     {
-        return 0f;
+        float distX1, distX2, distY1, distY2, cross;
+
+        distX1 = tile.transform.position.x - goal.transform.position.x;
+        distY1 = tile.transform.position.y - goal.transform.position.y;
+
+        distX2 = start.transform.position.x - goal.transform.position.x;
+        distY2 = start.transform.position.y - goal.transform.position.y;
+
+        cross = Mathf.Abs(distX1 * distY2 - distX2 * distY1);
+
+        return Manhattan(start, tile, goal) + cross * 0.001f;
     }
 }
