@@ -26,14 +26,14 @@ public class AStar : MonoBehaviour
         NodeRecord startRecord = new NodeRecord();
         NodeRecord currentRecord = new NodeRecord();
 
-        float endNodeHeuristic = 0;
-
+        //create and initialize the start record
         startRecord.Tile = start;
         startRecord.Node = start.GetComponent<Node>();
         startRecord.Connection = null;
         startRecord.CostSoFar = 0;
         startRecord.EstimatedCostSoFar = heuristic(start, startRecord.Tile, end);
 
+        //set the scale
         float scale = startRecord.Tile.transform.localScale.x;
 
         //creates an open list of node records and adds the start node to it
@@ -43,16 +43,16 @@ public class AStar : MonoBehaviour
         //creates a closed list of node records
         List<NodeRecord> closed = new List<NodeRecord>();
 
+        //while the open list isn't empty
         while (open.Count > 0)
         {
-            //initialize a variable for the current node and lowest cost
-            //currentNode = new NodeRecord();
+            //initialize a variable for the lowest cost
             float lowestCost = float.MaxValue;
 
             //for every element inside the open list
             for (int i = 0; i < open.Count; i++)
             {
-                //if the current cost of this node is the lowest cost
+                //if the current estimated cost of this node is the lowest cost
                 if (open[i].EstimatedCostSoFar < lowestCost)
                 {
                     //this cost becomes the lowest cost and this node becomes the current node
@@ -82,83 +82,87 @@ public class AStar : MonoBehaviour
             //for every connection in the connection list
             foreach (KeyValuePair<Direction, GameObject> connection in currentRecord.Node.Connections)
             {
-                //get the cost estimate for the end node
-                //endNode = connection.GetComponent<NodeRecord>().Node;
+                //get the cost estimate for the end node and set the connection
                 Node endNode = connection.Value.GetComponent<Node>();
                 float endNodeCost = currentRecord.CostSoFar + scale;
 
+                //initialize the node record and the exit condition
                 bool exitEarly = false;
                 NodeRecord endNodeRecord = new NodeRecord();
 
+                //check every node in the closed list
                 foreach (NodeRecord nodeRecord in closed)
                 {
+                    //if the node is the end node
                     if (nodeRecord.Node == endNode)
                     {
+                        //set it
                         endNodeRecord = nodeRecord;
 
-                        //seems to never be greater than endnodecost
+                        //if the current cost is the best cost so far
                         if(endNodeRecord.CostSoFar <= endNodeCost)
                         {
+                            //exit early
                             exitEarly = true;
                             break;
                         }
                         else
                         {
+                            //if it's worse then remove it from the list
                             closed.Remove(endNodeRecord);
-                            //endNodeHeuristic = endNodeRecord.EstimatedCostSoFar - endNodeRecord.CostSoFar;
-
-                            //endNodeRecord.EstimatedCostSoFar = endNodeHeuristic;
                             break;
                         }
                     }
                 }
+                //check every node in the open list
                 foreach (NodeRecord nodeRecord in open)
                 {
-                    
+                    //if the node is the end node
                     if (nodeRecord.Node == endNode)
                     {
+                        //set it
                         endNodeRecord = nodeRecord;
 
+                        //if the current cost is the best cost so far
                         if (endNodeRecord.CostSoFar <= endNodeCost)
                         {
+                            //exit early
                             exitEarly = true;
                             break;
                         }
                         else
                         {
+                            //if it's worse then remove it from the list
                             open.Remove(endNodeRecord);
-                            //endNodeHeuristic = endNodeRecord.EstimatedCostSoFar - endNodeRecord.CostSoFar;
-
-                            //endNodeRecord.EstimatedCostSoFar = endNodeHeuristic;
                             break;
                         }
                     }
                 }
 
+                //if true then exit this check of the connection loop early
                 if(exitEarly)
                 {
                     continue;
                 }
                 else
                 {
+                    //otherwise initialize a new end node record
                     endNodeRecord = new NodeRecord();
                     endNodeRecord.Node = endNode;
                     endNodeRecord.Tile = endNode.gameObject;
-                    //endNodeHeuristic = heuristic(start, currentRecord.Tile, end);
                     endNodeRecord.EstimatedCostSoFar = heuristic(start, endNodeRecord.Tile, end);
                 }
 
+                //update the cost and the connection
                 endNodeRecord.CostSoFar = endNodeCost;
                 endNodeRecord.Connection = currentRecord.Node.Connections;
-                //endNodeHeuristic = endNodeCost + endNodeHeuristic;
-
-                //endNodeRecord.EstimatedCostSoFar = endNodeHeuristic;
 
                 if(displayCosts)
                 {
                     endNodeRecord.Display(endNodeCost);
                 }
 
+                //check if the end node is in the open list
                 bool containsEndNode = false;
                 foreach (NodeRecord nodeRecord in open)
                 {
@@ -167,6 +171,8 @@ public class AStar : MonoBehaviour
                         containsEndNode= true;
                     }
                 }
+
+                //if the node is not in the open list then add it
                 if(!containsEndNode)
                 {
                     open.Add(endNodeRecord);
@@ -213,13 +219,19 @@ public class AStar : MonoBehaviour
         }
         else
         {
+            //starting at the end node loop until you get to the start node
             while (currentRecord != startRecord)
             {
+                //push the record to the path
                 path.Push(currentRecord);
+
+                //check the closed list
                 foreach (NodeRecord nodeRecord in closed)
                 {
+                    //if there is a connection between nodes
                     if (nodeRecord.Node.Connections == currentRecord.Connection)
                     {
+                        //step to the next node in the path
                         currentRecord = nodeRecord;
                         break;
                     }
@@ -248,25 +260,33 @@ public class AStar : MonoBehaviour
 
     public static float Manhattan (GameObject start, GameObject tile, GameObject goal)
     {
+        //initialize values
         float distX, distY;
+
+        //calculate the absolute distances of each
         distX = Mathf.Abs(tile.transform.position.x - goal.transform.position.x);
         distY = Mathf.Abs(tile.transform.position.y - goal.transform.position.y);
 
+        //return the sum
         return distX + distY;
     }
 
     public static float CrossProduct (GameObject start, GameObject tile, GameObject goal)
     {
+        //initialize values
         float distX1, distX2, distY1, distY2, cross;
 
+        //calculate the distances
         distX1 = tile.transform.position.x - goal.transform.position.x;
         distY1 = tile.transform.position.y - goal.transform.position.y;
 
         distX2 = start.transform.position.x - goal.transform.position.x;
         distY2 = start.transform.position.y - goal.transform.position.y;
 
+        //calculate the cross product of the distances
         cross = Mathf.Abs(distX1 * distY2 - distX2 * distY1);
 
+        //plug the result into the manhattan heuristic and return the value
         return Manhattan(start, tile, goal) + cross * 0.001f;
     }
 }
